@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Domain to IP Resolver</title>
+  </head>
+  <body>
+    <h1>Domain to IP Resolver</h1>
+    <form method="post" action="/">
+      <label for="domain">Enter Domain:</label>
+      <input type="text" id="domain" name="domain" required />
+      <button type="submit">Resolve</button>
+    </form>
+
+    {{if .Domain}}
+    <h2>Result</h2>
+    <p>Domain: {{.Domain}}</p>
+    {{if .IP}}
+    <p>IP Address: {{.IP}}</p>
+    {{else}}
+    <p style="color: red">{{.Message}}</p>
+    {{end}} {{end}}
+  </body>
+</html>

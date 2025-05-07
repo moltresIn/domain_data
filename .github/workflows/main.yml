@@ -43,15 +43,31 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
+      # Debug: Verify that GCP_CREDENTIALS is set
+      - name: Debug GCP_CREDENTIALS
+        run: echo "GCP_CREDENTIALS is set"
+        env:
+          GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+
       # Authenticate to GCP using GCP_CREDENTIALS
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_CREDENTIALS }}
 
+      # Debug: Check gcloud installation
+      - name: Check gcloud Installation
+        run: |
+          gcloud --version
+          echo "Gcloud is installed and available"
+
       # Set the active project
       - name: Set GCP Project
         run: gcloud config set project ornate-crossbar-450707-p6
+
+      # Debug: Verify current configuration
+      - name: Verify GCP Configuration
+        run: gcloud config list
 
       # Deploy to GCP (example for App Engine)
       - name: Deploy to GCP

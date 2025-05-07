@@ -1,4 +1,4 @@
-runtime: go120  # Using Go 1.20 runtime
+runtime: go121  # Using Go 1.21 runtime (latest supported)
 
 service: default  # Use 'default' service or replace with your specific service name
 

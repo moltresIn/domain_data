@@ -8,28 +8,28 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout code
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # Set up Go (if applicable)
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version: '1.20'
 
-      # Install dependencies and build
       - name: Install Dependencies
         run: |
           go mod tidy
           go build -v ./...
 
-      # Run tests
       - name: Run Tests
         run: |
           go test -v ./...
@@ -39,36 +39,33 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout code
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # Debug: Verify that GCP_CREDENTIALS is set
-      - name: Debug GCP_CREDENTIALS
-        run: echo "GCP_CREDENTIALS is set"
-        env:
-          GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+      - name: Debug Environment
+        run: |
+          if [ -z "${{ secrets.GCP_CREDENTIALS }}" ]; then
+            echo "GCP_CREDENTIALS is not set"
+          else
+            echo "GCP_CREDENTIALS is set"
+          fi
 
-      # Authenticate to GCP using GCP_CREDENTIALS
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_CREDENTIALS }}
 
-      # Debug: Check gcloud installation
       - name: Check gcloud Installation
         run: |
           gcloud --version
           echo "Gcloud is installed and available"
 
-      # Set the active project
       - name: Set GCP Project
         run: gcloud config set project ornate-crossbar-450707-p6
 
-      # Debug: Verify current configuration
       - name: Verify GCP Configuration
         run: gcloud config list
 
-      # Deploy to GCP (example for App Engine)
       - name: Deploy to GCP
         run: gcloud app deploy --quiet
+

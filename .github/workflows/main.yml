@@ -32,19 +32,69 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
+        
+      - name: Debug Environment Variables
+        run: |
+          echo "GitHub event name: ${{ github.event_name }}"
+          echo "GitHub actor: ${{ github.actor }}"
+          echo "GitHub repository: ${{ github.repository }}"
+          echo "GitHub ref: ${{ github.ref }}"
+          echo "Is pull request: ${{ github.event_name == 'pull_request' }}"
+          echo "Is fork pull request: ${{ github.event.pull_request.head.repo.fork == true }}"
+      
+      - name: Debug Secret Availability
+        run: |
+          echo "Checking secret availability..."
+          if [ -n "${{ secrets.GCP_CREDENTIALS }}" ]; then
+            echo "GCP_CREDENTIALS secret is available (content not shown for security)"
+            echo "Secret length: $(echo '${{ secrets.GCP_CREDENTIALS }}' | wc -c) characters"
+            # Check if it's valid JSON (without exposing content)
+            echo "Checking if secret is valid JSON..."
+            echo '${{ secrets.GCP_CREDENTIALS }}' | jq -e . > /dev/null 2>&1
+            if [ $? -eq 0 ]; then
+              echo "Secret appears to be valid JSON"
+            else
+              echo "WARNING: Secret does not appear to be valid JSON"
+            fi
+          else
+            echo "ERROR: GCP_CREDENTIALS secret is NOT available"
+            echo "This could be because:"
+            echo "- The secret is not defined in your repository"
+            echo "- The secret name might be different than 'GCP_CREDENTIALS'"
+            echo "- This workflow is running from a fork or Dependabot"
+          fi
+      
+      - name: Create Temporary Credentials File
+        if: ${{ secrets.GCP_CREDENTIALS != '' }}
+        run: |
+          echo "Creating temporary credentials file..."
+          echo '${{ secrets.GCP_CREDENTIALS }}' > /tmp/gcp-credentials.json
+          echo "Checking file properties:"
+          ls -la /tmp/gcp-credentials.json
+          echo "First few characters of file (redacted):"
+          head -c 20 /tmp/gcp-credentials.json | sed 's/./*/g'
+      
       - name: Authenticate to GCP
         id: auth
         uses: google-github-actions/auth@v1
         with:
-          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.SERVICE_ACCOUNT }}
-          # Or use the credentials_json option (choose one approach)
-          # credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+      
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
+      
+      - name: Check gcloud Status
+        run: |
+          echo "Checking gcloud authentication status..."
+          gcloud auth list
+          echo "Checking gcloud project config..."
+          gcloud config list project
+      
       - name: Set GCP Project
         run: gcloud config set project ornate-crossbar-450707-p6
+      
       - name: Verify GCP Configuration
         run: gcloud config list
+      
       - name: Deploy to GCP
         run: gcloud app deploy --quiet

@@ -40,17 +40,22 @@ jobs:
           echo "GitHub repository: ${{ github.repository }}"
           echo "GitHub ref: ${{ github.ref }}"
           echo "Is pull request: ${{ github.event_name == 'pull_request' }}"
-          echo "Is fork pull request: ${{ github.event.pull_request.head.repo.fork == true }}"
+          # Only check this if it's a pull request
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "Is fork pull request: ${{ github.event.pull_request.head.repo.fork == true }}"
+          fi
       
       - name: Debug Secret Availability
+        env:
+          SECRET_CHECK: "${{ secrets.GCP_CREDENTIALS }}"
         run: |
           echo "Checking secret availability..."
-          if [ -n "${{ secrets.GCP_CREDENTIALS }}" ]; then
+          if [ -n "$SECRET_CHECK" ]; then
             echo "GCP_CREDENTIALS secret is available (content not shown for security)"
-            echo "Secret length: $(echo '${{ secrets.GCP_CREDENTIALS }}' | wc -c) characters"
+            echo "Secret length: $(echo "$SECRET_CHECK" | wc -c) characters"
             # Check if it's valid JSON (without exposing content)
             echo "Checking if secret is valid JSON..."
-            echo '${{ secrets.GCP_CREDENTIALS }}' | jq -e . > /dev/null 2>&1
+            echo "$SECRET_CHECK" | jq -e . > /dev/null 2>&1
             if [ $? -eq 0 ]; then
               echo "Secret appears to be valid JSON"
             else
@@ -65,14 +70,17 @@ jobs:
           fi
       
       - name: Create Temporary Credentials File
-        if: ${{ secrets.GCP_CREDENTIALS != '' }}
         run: |
-          echo "Creating temporary credentials file..."
-          echo '${{ secrets.GCP_CREDENTIALS }}' > /tmp/gcp-credentials.json
-          echo "Checking file properties:"
-          ls -la /tmp/gcp-credentials.json
-          echo "First few characters of file (redacted):"
-          head -c 20 /tmp/gcp-credentials.json | sed 's/./*/g'
+          if [ -n "${{ secrets.GCP_CREDENTIALS }}" ]; then
+            echo "Creating temporary credentials file..."
+            echo '${{ secrets.GCP_CREDENTIALS }}' > /tmp/gcp-credentials.json
+            echo "Checking file properties:"
+            ls -la /tmp/gcp-credentials.json
+            echo "First few characters of file (redacted):"
+            head -c 20 /tmp/gcp-credentials.json | sed 's/./*/g'
+          else
+            echo "Skipping credentials file creation - secret not available"
+          fi
       
       - name: Authenticate to GCP
         id: auth

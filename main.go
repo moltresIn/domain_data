@@ -12,7 +12,7 @@ type PageData struct {
 	IP      string
 	Message string
 }
-
+//Testing
 func resolveIP(w http.ResponseWriter, r *http.Request) {
 	tmpl := template.Must(template.ParseFiles("template/index.html"))
 

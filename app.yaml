@@ -1,0 +1,19 @@
+runtime: go120  # Using Go 1.20 runtime
+
+service: default  # Use 'default' service or replace with your specific service name
+
+instance_class: F1  # Smallest, cheapest instance
+
+automatic_scaling:
+  min_idle_instances: 0
+  max_idle_instances: 1
+  min_instances: 0
+  max_instances: 1
+  min_pending_latency: 3000ms  # Minimum latency target for requests
+  max_pending_latency: automatic
+  max_concurrent_requests: 40
+
+handlers:
+- url: /.*
+  script: auto
+  secure: always  # Ensures all traffic uses HTTPS

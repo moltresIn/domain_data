@@ -69,19 +69,6 @@ jobs:
             echo "- This workflow is running from a fork or Dependabot"
           fi
       
-      - name: Create Temporary Credentials File
-        run: |
-          if [ -n "${{ secrets.GCP_CREDENTIALS }}" ]; then
-            echo "Creating temporary credentials file..."
-            echo '${{ secrets.GCP_CREDENTIALS }}' > /tmp/gcp-credentials.json
-            echo "Checking file properties:"
-            ls -la /tmp/gcp-credentials.json
-            echo "First few characters of file (redacted):"
-            head -c 20 /tmp/gcp-credentials.json | sed 's/./*/g'
-          else
-            echo "Skipping credentials file creation - secret not available"
-          fi
-      
       - name: Authenticate to GCP
         id: auth
         uses: google-github-actions/auth@v1
@@ -103,6 +90,43 @@ jobs:
       
       - name: Verify GCP Configuration
         run: gcloud config list
+      
+      - name: Create app.yaml if not exists
+        run: |
+          if [ ! -f app.yaml ]; then
+            echo "Creating app.yaml file..."
+            cat > app.yaml << 'EOL'
+          runtime: go120  # Using Go 1.20 runtime
+          
+          service: default  # Use 'default' service or replace with your specific service name
+          
+          instance_class: F1  # Smallest, cheapest instance
+          
+          automatic_scaling:
+            min_idle_instances: 0
+            max_idle_instances: 1
+            min_instances: 0
+            max_instances: 1
+            min_pending_latency: 3000ms  # Minimum latency target for requests
+            max_pending_latency: automatic
+            max_concurrent_requests: 40
+          
+          handlers:
+          - url: /.*
+            script: auto
+            secure: always  # Ensures all traffic uses HTTPS
+          EOL
+            echo "app.yaml created successfully"
+            cat app.yaml
+          else
+            echo "app.yaml already exists, using existing file"
+            cat app.yaml
+          fi
+      
+      - name: List Files
+        run: |
+          echo "Current directory contents:"
+          ls -la
       
       - name: Deploy to GCP
         run: gcloud app deploy --quiet
